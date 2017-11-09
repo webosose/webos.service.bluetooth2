@@ -67,7 +67,6 @@ BluetoothManagerService::BluetoothManagerService() :
 	mKeepAliveEnabled(false),
 	mKeepAliveInterval(1),
 	mDiscoveryTimeout(0),
-	mNextLeScanId(1),
 	mDiscoverable(false),
 	mDiscoverableTimeout(0),
 	mClassOfDevice(0),
@@ -422,7 +421,19 @@ void BluetoothManagerService::notifySubscribersDevicesChanged()
 	LSUtils::postToSubscriptionPoint(&mGetDevicesSubscriptions, responseObj);
 }
 
-void BluetoothManagerService::notifySubscriberLeDevicesChanged(uint32_t scanId)
+void BluetoothManagerService::notifySubscriberLeDevicesChanged()
+{
+	for (auto watchIter : mStartScanWatches)
+	{
+		pbnjson::JValue responseObj = pbnjson::Object();
+		appendLeDevices(responseObj);
+
+		responseObj.put("returnValue", true);
+		LSUtils::postToClient(watchIter.second->getMessage(), responseObj);
+	}
+}
+
+void BluetoothManagerService::notifySubscriberLeDevicesChangedbyScanId(uint32_t scanId)
 {
 	auto watchIter = mStartScanWatches.find(scanId);
 	if (watchIter == mStartScanWatches.end())
@@ -526,6 +537,21 @@ BluetoothDevice* BluetoothManagerService::findDevice(const std::string &address)
 		convertedAddress = convertToUpper(address);
 		auto deviceIter = mDevices.find(convertedAddress);
 		if (deviceIter == mDevices.end())
+			return 0;
+	}
+
+	return deviceIter->second;
+}
+
+BluetoothDevice* BluetoothManagerService::findLeDevice(const std::string &address) const
+{
+	std::string convertedAddress = convertToLower(address);
+	auto deviceIter = mLeDevices.find(convertedAddress);
+	if (deviceIter == mLeDevices.end())
+	{
+		convertedAddress = convertToUpper(address);
+		auto deviceIter = mLeDevices.find(convertedAddress);
+		if (deviceIter == mLeDevices.end())
 			return 0;
 	}
 
@@ -824,6 +850,47 @@ void BluetoothManagerService::deviceRemoved(const std::string &address)
 	notifySubscribersDevicesChanged();
 }
 
+void BluetoothManagerService::leDeviceFound(const std::string &address, BluetoothPropertiesList properties)
+{
+	auto device = findLeDevice(address);
+	if (!device)
+	{
+		BluetoothDevice *device = new BluetoothDevice(properties);
+		BT_DEBUG("Found a new LE device");
+		mLeDevices.insert(std::pair<std::string, BluetoothDevice*>(device->getAddress(), device));
+	}
+	else
+	{
+		device->update(properties);
+	}
+
+	notifySubscriberLeDevicesChanged();
+}
+
+void BluetoothManagerService::leDevicePropertiesChanged(const std::string &address, BluetoothPropertiesList properties)
+{
+	BT_DEBUG("Properties of device %s have changed", address.c_str());
+
+	auto device = findLeDevice(address);
+	if (device && device->update(properties))
+		notifySubscriberLeDevicesChanged();
+}
+
+void BluetoothManagerService::leDeviceRemoved(const std::string &address)
+{
+	BT_DEBUG("Device %s has disappeared", address.c_str());
+
+	auto deviceIter = mLeDevices.find(address);
+	if (deviceIter == mLeDevices.end())
+		return;
+
+	BluetoothDevice *device = deviceIter->second;
+	mLeDevices.erase(deviceIter);
+	delete device;
+
+	notifySubscriberLeDevicesChanged();
+}
+
 void BluetoothManagerService::leDeviceFoundByScanId(uint32_t scanId, BluetoothPropertiesList properties)
 {
 	BluetoothDevice *device = new BluetoothDevice(properties);
@@ -840,7 +907,7 @@ void BluetoothManagerService::leDeviceFoundByScanId(uint32_t scanId, BluetoothPr
 	else
 		(devicesIter->second).insert(std::pair<std::string, BluetoothDevice*>(device->getAddress(), device));
 
-	notifySubscriberLeDevicesChanged(scanId);
+	notifySubscriberLeDevicesChangedbyScanId(scanId);
 }
 
 void BluetoothManagerService::leDevicePropertiesChangedByScanId(uint32_t scanId, const std::string &address, BluetoothPropertiesList properties)
@@ -858,7 +925,7 @@ void BluetoothManagerService::leDevicePropertiesChangedByScanId(uint32_t scanId,
 	BluetoothDevice *device = deviceIter->second;
 	if (device && device->update(properties))
 	{
-		notifySubscriberLeDevicesChanged(scanId);
+		notifySubscriberLeDevicesChangedbyScanId(scanId);
 	}
 }
 
@@ -878,7 +945,7 @@ void BluetoothManagerService::leDeviceRemovedByScanId(uint32_t scanId, const std
 	(devicesIter->second).erase(deviceIter);
 	delete device;
 
-	notifySubscriberLeDevicesChanged(scanId);
+	notifySubscriberLeDevicesChangedbyScanId(scanId);
 }
 
 void BluetoothManagerService::deviceLinkKeyCreated(const std::string &address, BluetoothLinkKey LinkKey)
@@ -1219,6 +1286,25 @@ void BluetoothManagerService::appendFilteringDevices(std::string senderName, pbn
 	object.put("devices", devicesObj);
 }
 
+void BluetoothManagerService::appendLeDevices(pbnjson::JValue &object)
+{
+	pbnjson::JValue devicesObj = pbnjson::Array();
+
+	for (auto deviceIter : mLeDevices)
+	{
+		auto device = deviceIter.second;
+		pbnjson::JValue deviceObj = pbnjson::Object();
+
+		deviceObj.put("address", device->getAddress());
+		deviceObj.put("rssi", device->getRssi());
+
+		appendScanRecord(deviceObj, device->getScanRecord());
+		devicesObj.append(deviceObj);
+	}
+
+	object.put("devices", devicesObj);
+}
+
 void BluetoothManagerService::appendLeDevicesByScanId(pbnjson::JValue &object, uint32_t scanId)
 {
 	auto devicesIter = mLeDevicesByScanId.find(scanId);
@@ -1253,6 +1339,7 @@ void BluetoothManagerService::appendLeDevicesByScanId(pbnjson::JValue &object, u
 			deviceObj.put("adapterAddress", "");
 
 		appendManufacturerData(deviceObj, device->getManufacturerData());
+		appendScanRecord(deviceObj, device->getScanRecord());
 		appendSupportedServiceClasses(deviceObj, device->getSupportedServiceClasses());
 		appendConnectedProfiles(deviceObj, device->getAddress());
 		devicesObj.append(deviceObj);
@@ -3502,8 +3589,10 @@ void BluetoothManagerService::notifyStartScanListenerDropped(uint32_t scanId)
 	mStartScanWatches.erase(watchIter);
 	delete watch;
 
-	if (mDefaultAdapter)
-		mDefaultAdapter->cancelLeDiscovery(scanId);
+	mDefaultAdapter->removeLeDiscoveryFilter(scanId);
+
+	if (mStartScanWatches.size() == 0)
+		mDefaultAdapter->cancelLeDiscovery();
 }
 
 bool BluetoothManagerService::notifyAdvertisingDisabled(uint8_t advertiserId)
@@ -4555,6 +4644,7 @@ bool BluetoothManagerService::startScan(LSMessage &message)
 	LS::Message request(&message);
 	pbnjson::JValue requestObj;
 	int parseError = 0;
+	int32_t leScanId = -1;
 	bool subscribed = false;
 
 	if (!mDefaultAdapter)
@@ -4563,7 +4653,11 @@ bool BluetoothManagerService::startScan(LSMessage &message)
 		return true;
 	}
 
-	const std::string schema =  STRICT_SCHEMA(PROPS_2(ARRAY(uuids, string),PROP(subscribe,boolean)) REQUIRED_1(subscribe));
+	const std::string schema =  STRICT_SCHEMA(PROPS_7(PROP(address, string), PROP(name, string),
+													PROP(subscribe, boolean), PROP(adapterAddress, string),
+													OBJECT(serviceUuid, OBJSCHEMA_2(PROP(uuid, string), PROP(mask, string))),
+													OBJECT(serviceData, OBJSCHEMA_3(PROP(uuid, string), ARRAY(data, integer), ARRAY(mask, integer))),
+													OBJECT(manufacturerData, OBJSCHEMA_3(PROP(id, integer), ARRAY(data, integer), ARRAY(mask, integer)))) REQUIRED_1(subscribe));
 
 	if(!LSUtils::parsePayload(request.getPayload(),requestObj,schema,&parseError))
 	{
@@ -4581,26 +4675,130 @@ bool BluetoothManagerService::startScan(LSMessage &message)
 	if (!isRequestedAdapterAvailable(request, requestObj, adapterAddress))
 		return true;
 
-	BluetoothBleDiscoveryUuidFilterList uuids;
-	uuids.clear();
+	BluetoothLeDiscoveryFilter leFilter;
+	BluetoothLeServiceUuid serviceUuid;
+	BluetoothLeServiceData serviceData;
+	BluetoothManufacturerData manufacturerData;
 
-	if (requestObj.hasKey("uuids"))
+	if (requestObj.hasKey("address"))
 	{
-		auto uuidsObjArray = requestObj["uuids"];
-		for (int n = 0; n < uuidsObjArray.arraySize(); n++)
-		{
-			pbnjson::JValue element = uuidsObjArray[n];
-			uuids.push_back(element.asString());
-		}
+		std::string address = requestObj["address"].asString();
+		leFilter.setAddress(address);
 	}
 
-	if (mNextLeScanId > BLUETOOTH_LE_START_SCAN_MAX_ID)
-		mNextLeScanId = 1;
+	if (requestObj.hasKey("name"))
+	{
+		std::string name = requestObj["name"].asString();
+		leFilter.setName(name);
+	}
 
-	uint32_t leScanId = mNextLeScanId;
+	if (requestObj.hasKey("serviceUuid"))
+	{
+		pbnjson::JValue serviceUuidObj = requestObj["serviceUuid"];
+
+		if (serviceUuidObj.hasKey("uuid"))
+		{
+			std::string uuid = serviceUuidObj["uuid"].asString();
+			serviceUuid.setUuid(uuid);
+		}
+
+		if (serviceUuidObj.hasKey("mask"))
+		{
+			std::string mask = serviceUuidObj["mask"].asString();
+			serviceUuid.setMask(mask);
+		}
+
+		leFilter.setServiceUuid(serviceUuid);
+	}
+
+	if (requestObj.hasKey("serviceData"))
+	{
+		pbnjson::JValue serviceDataObj = requestObj["serviceData"];
+
+		if (serviceDataObj.hasKey("uuid"))
+		{
+			std::string uuid = serviceDataObj["uuid"].asString();
+			serviceData.setUuid(uuid);
+		}
+
+		if (serviceDataObj.hasKey("data"))
+		{
+			BluetoothLowEnergyData data;
+			auto dataObjArray = serviceDataObj["data"];
+			for (int n = 0; n < dataObjArray.arraySize(); n++)
+			{
+				pbnjson::JValue element = dataObjArray[n];
+				data.push_back((uint8_t)element.asNumber<int32_t>());
+			}
+
+			serviceData.setData(data);
+		}
+
+		if (serviceDataObj.hasKey("mask"))
+		{
+			BluetoothLowEnergyMask mask;
+			auto maskObjArray = serviceDataObj["mask"];
+			for (int n = 0; n < maskObjArray.arraySize(); n++)
+			{
+				pbnjson::JValue element = maskObjArray[n];
+				mask.push_back((uint8_t)element.asNumber<int32_t>());
+			}
+
+			serviceData.setMask(mask);
+		}
+
+		leFilter.setServiceData(serviceData);
+
+	}
+
+	if (requestObj.hasKey("manufacturerData"))
+	{
+		pbnjson::JValue manufacturerDataObj = requestObj["manufacturerData"];
+
+		if (manufacturerDataObj.hasKey("id"))
+		{
+			int32_t id = manufacturerDataObj["id"].asNumber<int32_t>();
+			manufacturerData.setId(id);
+		}
+
+		if (manufacturerDataObj.hasKey("data"))
+		{
+			BluetoothLowEnergyData data;
+			auto dataObjArray = manufacturerDataObj["data"];
+			for (int n = 0; n < dataObjArray.arraySize(); n++)
+			{
+				pbnjson::JValue element = dataObjArray[n];
+				data.push_back((uint8_t)element.asNumber<int32_t>());
+			}
+
+			manufacturerData.setData(data);
+		}
+
+		if (manufacturerDataObj.hasKey("mask"))
+		{
+			BluetoothLowEnergyMask mask;
+			auto maskObjArray = manufacturerDataObj["mask"];
+			for (int n = 0; n < maskObjArray.arraySize(); n++)
+			{
+				pbnjson::JValue element = maskObjArray[n];
+				mask.push_back((uint8_t)element.asNumber<int32_t>());
+			}
+
+			manufacturerData.setMask(mask);
+		}
+
+		leFilter.setManufacturerData(manufacturerData);
+	}
 
 	if (request.isSubscription())
 	{
+		leScanId = mDefaultAdapter->addLeDiscoveryFilter(leFilter);
+		if (leScanId < 0)
+		{
+			LSUtils::respondWithError(request, BT_ERR_START_DISC_FAIL);
+			return true;
+		}
+
 		LSUtils::ClientWatch *watch = new LSUtils::ClientWatch(get(), &message,
 		                    std::bind(&BluetoothManagerService::notifyStartScanListenerDropped, this, leScanId));
 
@@ -4612,13 +4810,8 @@ bool BluetoothManagerService::startScan(LSMessage &message)
 
 	BluetoothError error = BLUETOOTH_ERROR_NONE;
 
-	if (!mPairState.isPairing())
-		error = mDefaultAdapter->startLeDiscovery(leScanId, uuids);
-	else
-	{
-		LSUtils::respondWithError(request, BT_ERR_PAIRING_IN_PROG);
-		return true;
-	}
+	if (mStartScanWatches.size() == 1)
+		error = mDefaultAdapter->startLeDiscovery();
 
 	if (error != BLUETOOTH_ERROR_NONE)
 	{
@@ -4632,7 +4825,8 @@ bool BluetoothManagerService::startScan(LSMessage &message)
 
 	LSUtils::postToClient(request, responseObj);
 
-	mNextLeScanId++;
+	if (leScanId > 0)
+		mDefaultAdapter->matchLeDiscoveryFilterDevices(leFilter, leScanId);
 
 	return true;
 }

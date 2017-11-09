@@ -75,9 +75,18 @@ public:
 	void deviceFound(const std::string &address, BluetoothPropertiesList properties);
 	void deviceRemoved(const std::string &address);
 	void devicePropertiesChanged(const std::string &address, BluetoothPropertiesList properties);
+
+	/*
+	 * These will be deprecated if stack is ready to support scanId.
+	 */
+	void leDeviceFound(const std::string &address, BluetoothPropertiesList properties);
+	void leDeviceRemoved(const std::string &address);
+	void leDevicePropertiesChanged(const std::string &address, BluetoothPropertiesList properties);
+
 	void leDeviceFoundByScanId(uint32_t scanId, BluetoothPropertiesList properties);
 	void leDeviceRemovedByScanId(uint32_t scanId, const std::string &address);
 	void leDevicePropertiesChangedByScanId(uint32_t scanId, const std::string &address, BluetoothPropertiesList properties);
+
 	void deviceLinkKeyCreated(const std::string &address, BluetoothLinkKey LinkKey);
 	void deviceLinkKeyDestroyed(const std::string &address, BluetoothLinkKey LinkKey);
 	void requestPairingSecret(const std::string &address, BluetoothPairingSecretType type);
@@ -97,6 +106,7 @@ public:
 	void resetProfiles();
 
 	BluetoothDevice* findDevice(const std::string &address) const;
+	BluetoothDevice* findLeDevice(const std::string &address) const;
 	BluetoothLinkKey findLinkKey(const std::string &address) const;
 	bool getPowered();
 	bool isAdapterAvailable(const std::string &address);
@@ -148,6 +158,7 @@ private:
 	void appendCurrentStatus(pbnjson::JValue &object);
 	void appendFilteringDevices(std::string senderName, pbnjson::JValue &object);
 	void appendDevices(pbnjson::JValue &object);
+	void appendLeDevices(pbnjson::JValue &object);
 	void appendLeDevicesByScanId(pbnjson::JValue &object, uint32_t scanId);
 	void appendSupportedServiceClasses(pbnjson::JValue &object, const std::vector<BluetoothServiceClassInfo> &supportedProfiles);
 	void appendConnectedProfiles(pbnjson::JValue &object, const std::string deviceAddress);
@@ -155,7 +166,8 @@ private:
 	void appendManufacturerData(pbnjson::JValue &object, const std::vector<uint8_t> manufacturerData);
 	void appendScanRecord(pbnjson::JValue &object, const std::vector<uint8_t> scanRecord);
 
-	void notifySubscriberLeDevicesChanged(uint32_t scanId);
+	void notifySubscriberLeDevicesChanged();
+	void notifySubscriberLeDevicesChangedbyScanId(uint32_t scanId);
 	void notifySubscribersAboutStateChange();
 	void notifySubscribersFilteredDevicesChanged();
 	void notifySubscribersDevicesChanged();
@@ -217,13 +229,13 @@ private:
 	bool mKeepAliveEnabled;
 	uint32_t mKeepAliveInterval;
 	uint32_t mDiscoveryTimeout;
-	uint32_t mNextLeScanId;
 	bool mDiscoverable;
 	uint32_t mDiscoverableTimeout;
 	uint32_t mClassOfDevice;
 	BluetoothSIL *mSil;
 	BluetoothAdapter *mDefaultAdapter;
 	std::unordered_map<std::string, BluetoothDevice*> mDevices;
+	std::unordered_map<std::string, BluetoothDevice*> mLeDevices;
 	std::unordered_map<std::string, BluetoothLinkKey> mLinkKeys;
 	std::vector<BluetoothServiceClassInfo> mSupportedServiceClasses;
 	std::vector<std::string> mEnabledServiceClasses;
