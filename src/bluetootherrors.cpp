@@ -166,6 +166,7 @@ static std::map<BluetoothErrorCode, std::string> bluetoothErrorTextTable =
 	{BT_ERR_BLE_ADV_SERVICE_DATA_FAIL, "Cannot have more than one service with data."},
 	{BT_ERR_BLE_ADV_UUID_FAIL, "Cannot configure data without UUID."},
 	{BT_ERR_BLE_ADV_NO_MORE_ADVERTISER, "Failed to start advertising because no advertising instance is available."},
+	{BT_ERR_BLE_ADV_EXCEED_SIZE_LIMIT, "Advertise size cannot be more than 31 bytes."},
 	{BT_ERR_SPP_APPID_PARAM_MISSING, "Application id is not supplied"},
 	{BT_ERR_HFP_ALLOW_ONE_SUBSCRIBE_PER_DEVICE, "Only one subscription per device allowed"},
 	{BT_ERR_PAN_SET_TETHERING_FAILED, "Failed to set bluetooth tethering"},

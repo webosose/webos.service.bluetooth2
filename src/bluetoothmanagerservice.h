@@ -105,6 +105,7 @@ public:
 	void setAdvertisingState(bool advertising);
 	bool isRoleEnable(const std::string &role);
 	std::string getMessageOwner(LSMessage *message);
+	int getAdvSize(AdvertiseData advData, bool flagRequired);
 
 
 private:

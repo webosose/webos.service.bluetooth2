@@ -45,6 +45,7 @@
 #include "utils.h"
 
 #define BLUETOOTH_LE_START_SCAN_MAX_ID 999
+#define MAX_ADVERTISING_DATA_BYTES 31
 
 using namespace std::placeholders;
 
@@ -259,6 +260,60 @@ std::string BluetoothManagerService::getMessageOwner(LSMessage *message)
         return returnName;
 }
 
+int BluetoothManagerService::getAdvSize(AdvertiseData advData, bool flagRequired)
+{
+	//length (1byte) + type (1byte) + flag (1byte)
+	int flagsFieldBytes = 3;
+	// length (1byte) + type (1 byte)
+	int overheadBytesPerField = 2;
+	int numUuuid = 0;
+	//Currently only 16-bit uuid supported
+	int uuidSize = 2;
+
+	int size = flagRequired ? flagsFieldBytes : 0;
+
+	if (!advData.services.empty())
+	{
+		numUuuid = advData.services.size();
+		for (auto it = advData.services.begin(); it != advData.services.end(); it++)
+		{
+			auto data = it->second;
+			if (!(it->second.empty()))
+			{
+				size = size + overheadBytesPerField + data.size();
+				break;
+			}
+		}
+	}
+
+	if (!advData.manufacturerData.empty())
+	{
+		size = size + overheadBytesPerField + advData.manufacturerData.size();
+	}
+
+	if (numUuuid)
+	{
+		size = size + overheadBytesPerField + (numUuuid * uuidSize);
+	}
+
+	for (auto it = advData.proprietaryData.begin(); it != advData.proprietaryData.end(); it++)
+	{
+		auto data = it->data;
+		size = size + data.size() + overheadBytesPerField;
+	}
+
+	if (advData.includeTxPower)
+	{
+		size += overheadBytesPerField + 1; // tx power level value is one byte.
+	}
+
+	if (advData.includeName)
+	{
+		size += overheadBytesPerField + mName.length();
+	}
+
+	return size;
+}
 
 bool BluetoothManagerService::getAdvertisingState() {
 	return mAdvertising;
@@ -4087,6 +4142,13 @@ bool BluetoothManagerService::startAdvertising(LSMessage &message)
 				LSMessageUnref(requestMessage);
 			}
 		};
+
+		if (getAdvSize(advInfo.advertiseData, true) > MAX_ADVERTISING_DATA_BYTES ||
+						getAdvSize(advInfo.scanResponse, false) > MAX_ADVERTISING_DATA_BYTES)
+		{
+			LSUtils::respondWithError(request, BT_ERR_BLE_ADV_EXCEED_SIZE_LIMIT);
+			return true;
+		}
 
 		mDefaultAdapter->registerAdvertiser(leRegisterAdvCallback);
 	}
