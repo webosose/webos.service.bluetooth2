@@ -1,0 +1,31 @@
+// Copyright (c) 2014-2018 LG Electronics, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0
+
+
+#ifndef CONFIG_H_
+#define CONFIG_H_
+
+#define VERSION        "@WEBOS_COMPONENT_VERSION@"
+#define DESCRIPTION    "@WEBOS_PROJECT_SUMMARY@"
+
+#define WEBOS_BLUETOOTH_SIL_BASE_PATH           "@WEBOS_BLUETOOTH_SIL_BASE_PATH@"
+#define WEBOS_BLUETOOTH_SIL                     "@WEBOS_BLUETOOTH_SIL@"
+#define WEBOS_BLUETOOTH_ENABLED_SERVICE_CLASSES "@WEBOS_BLUETOOTH_ENABLED_SERVICE_CLASSES@"
+#define WEBOS_BLUETOOTH_PAIRING_IO_CAPABILITY   "@WEBOS_BLUETOOTH_PAIRING_IO_CAPABILITY@"
+
+#define WEBOS_MOUNTABLESTORAGEDIR               "@WEBOS_INSTALL_MOUNTABLESTORAGEDIR@"
+
+#endif

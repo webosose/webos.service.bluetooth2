@@ -1,0 +1,23 @@
+{
+    "contexts" : [
+        {
+            "name" : "webos-bluetooth-service",
+            "level" : "debug",
+            "logProcessIds" : true,
+            "logThreadIds" : true,
+            "logToConsole" : false,
+            "rules" : [
+                {"filter" : "*.*", "output" : "webos-bluetooth-service"}
+            ]
+        }
+    ],
+
+    "outputs" : [
+        {
+            "name" : "webos-bluetooth-service",
+            "file" : "/var/log/webos-bluetooth-service.log",
+            "maxSize" : 100000,
+            "rotations" : 5
+        }
+    ]
+}
