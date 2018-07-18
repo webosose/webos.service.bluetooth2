@@ -1003,7 +1003,7 @@ bool BluetoothAvrcpProfileService::setAbsoluteVolume(LSMessage &message)
 		}
 	}
 
-	uint32_t volume = 0;
+	int32_t volume = 0;
 	if (requestObj.hasKey("volume"))
 	{
 		volume = requestObj["volume"].asNumber<int32_t>();

@@ -1426,7 +1426,7 @@ bool BluetoothManagerService::startFilteringDiscovery(LSMessage &message)
 	std::string adapterAddress;
 	std::string typeOfDevice;
 	std::string accessCode;
-	TransportType transportType;
+	TransportType transportType = TransportType::BT_TRANSPORT_TYPE_NONE;
 	InquiryAccessCode inquiryAccessCode = InquiryAccessCode::BT_ACCESS_CODE_NONE; // CID 166097
 	uint8_t mergedTransportType = 0;
 	uint8_t mergedInquiryAccessCode = 0;
@@ -3041,8 +3041,8 @@ bool BluetoothManagerService::setKeepAlive(LSMessage &message)
 	if (!isRequestedAdapterAvailable(request, requestObj, adapterAddress))
 		return true;
 
-	BluetoothError error;
-	bool keepAliveEnabled;
+	BluetoothError error = BLUETOOTH_ERROR_NONE;
+	bool keepAliveEnabled = false;
 
 	if (requestObj.hasKey("keepAliveInterval"))
 	{

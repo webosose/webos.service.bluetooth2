@@ -3508,7 +3508,7 @@ void BluetoothGattProfileService::writeLocalCharacteristic(
 	safe_callback(callback, BLUETOOTH_ERROR_NONE);
 	auto localServer = findLocalServerByServiceId(localService->id);
 	BT_DEBUG("[%s](%d) getImpl->notifyCharacteristicValueChanged\n", __FUNCTION__, __LINE__);
-	getImpl<BluetoothGattProfile>()->notifyCharacteristicValueChanged(localServer->id, characteristic, characteristic.getHandle());
+	getImpl<BluetoothGattProfile>()->notifyCharacteristicValueChanged(localServer->id, localServer->id, characteristic, characteristic.getHandle());
 }
 
 void BluetoothGattProfileService::writeLocalDescriptor(
