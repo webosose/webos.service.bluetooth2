@@ -4002,6 +4002,8 @@ bool BluetoothManagerService::startAdvertising(LSMessage &message)
 	std::string adapterAddress;
 	AdvertiserInfo advInfo;
 	memset(&advInfo, 0, sizeof(AdvertiserInfo));
+	//Assign default value true
+	advInfo.settings.connectable = true;
 	BT_DEBUG("BluetoothManagerService::%s %d advertiseData.includeTxPower:%d", __FUNCTION__, __LINE__, advInfo.advertiseData.includeTxPower);
 	BT_DEBUG("BluetoothManagerService::%s %d scanResponse.includeTxPower:%d", __FUNCTION__, __LINE__, advInfo.scanResponse.includeTxPower);
 

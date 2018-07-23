@@ -226,7 +226,6 @@ void BluetoothGattProfileService::characteristicValueChanged(const std::string &
 
 void BluetoothGattProfileService::characteristicValueChanged(const BluetoothUuid &service, const BluetoothGattCharacteristic &characteristic)
 {
-	//TODO: To be implemented
 	BT_INFO("BLE", 0, "characteristic value changed for local adapter with service %s, characteristics %s", service.toString().c_str(), characteristic.getUuid().toString().c_str());
 
 	for (auto obsIter = mGattObservers.begin(); obsIter != mGattObservers.end(); obsIter++)
@@ -234,6 +233,11 @@ void BluetoothGattProfileService::characteristicValueChanged(const BluetoothUuid
 		(*obsIter)->characteristicValueChanged(service, characteristic);
 	}
 
+	auto localService = findLocalService(service);
+	if (localService)
+	{
+		localService->desc.updateCharacteristicValue(characteristic.getUuid(), characteristic.getValue());
+	}
 }
 
 void BluetoothGattProfileService::incomingLeConnectionRequest(const std::string &address, bool state)
