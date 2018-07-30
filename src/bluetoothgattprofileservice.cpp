@@ -187,14 +187,22 @@ void BluetoothGattProfileService::characteristicValueChanged(const std::string &
 			continue;
 
 		bool foundCharacteristic = false;
-		for (auto it2 = subscriptionValue.characteristicUuids.begin(); it2 != subscriptionValue.characteristicUuids.end(); ++it2)
+		if (subscriptionValue.characteristicUuids.size() > 0)
 		{
-			if ((*it2) == characteristic.getUuid())
+			for (auto it2 = subscriptionValue.characteristicUuids.begin(); it2 != subscriptionValue.characteristicUuids.end(); ++it2)
 			{
-				foundCharacteristic = true;
-				break;
+				if ((*it2) == characteristic.getUuid())
+				{
+					foundCharacteristic = true;
+					break;
+				}
 			}
 		}
+		else if (subscriptionValue.characteristicUuid == characteristic.getUuid())
+		{
+			foundCharacteristic = true;
+		}
+
 		if (!foundCharacteristic)
 			continue;
 
@@ -238,6 +246,56 @@ void BluetoothGattProfileService::characteristicValueChanged(const BluetoothUuid
 	{
 		localService->desc.updateCharacteristicValue(characteristic.getUuid(), characteristic.getValue());
 	}
+
+	for (auto it = mMonitorCharacteristicSubscriptions.begin() ; it != mMonitorCharacteristicSubscriptions.end(); ++it)
+	{
+		auto subscriptionValue = it->second;
+
+		if (subscriptionValue.serviceUuid != service)
+			continue;
+
+		bool foundCharacteristic = false;
+		if (subscriptionValue.characteristicUuids.size() > 0)
+		{
+			for (auto it2 = subscriptionValue.characteristicUuids.begin(); it2 != subscriptionValue.characteristicUuids.end(); ++it2)
+			{
+				if ((*it2) == characteristic.getUuid())
+				{
+					foundCharacteristic = true;
+					break;
+				}
+			}
+		}
+		else if (subscriptionValue.characteristicUuid == characteristic.getUuid())
+			foundCharacteristic = true;
+
+		if (!foundCharacteristic)
+			continue;
+
+		auto monitorCharacteristicsWatch = it->first;
+		pbnjson::JValue responseObj = pbnjson::Object();
+		responseObj.put("returnValue", true);
+		responseObj.put("subscribed", true);
+		responseObj.put("adapterAddress", getManager()->getAddress());
+		responseObj.put("address", getManager()->getAddress());
+
+		pbnjson::JValue characteristicObj = pbnjson::Object();
+		characteristicObj.put("characteristic", characteristic.getUuid().toString());
+		characteristicObj.put("instanceId", idToString(characteristic.getHandle()));
+
+		pbnjson::JValue valueObj = pbnjson::Object();
+		BluetoothGattValue values = characteristic.getValue();
+		pbnjson::JValue bytesArray = pbnjson::Array();
+		for (size_t i=0; i < values.size(); i++)
+			bytesArray.append((int32_t) values[i]);
+		valueObj.put("bytes", bytesArray);
+
+		characteristicObj.put("value", valueObj);
+		responseObj.put("changed", characteristicObj);
+
+		LSUtils::postToClient(monitorCharacteristicsWatch->getMessage(), responseObj);
+	}
+
 }
 
 void BluetoothGattProfileService::incomingLeConnectionRequest(const std::string &address, bool state)
@@ -3512,7 +3570,7 @@ void BluetoothGattProfileService::writeLocalCharacteristic(
 	safe_callback(callback, BLUETOOTH_ERROR_NONE);
 	auto localServer = findLocalServerByServiceId(localService->id);
 	BT_DEBUG("[%s](%d) getImpl->notifyCharacteristicValueChanged\n", __FUNCTION__, __LINE__);
-	getImpl<BluetoothGattProfile>()->notifyCharacteristicValueChanged(localServer->id, localServer->id, characteristic, characteristic.getHandle());
+	getImpl<BluetoothGattProfile>()->notifyCharacteristicValueChanged(localServer->id, localService->id, characteristic, characteristic.getHandle());
 }
 
 void BluetoothGattProfileService::writeLocalDescriptor(
