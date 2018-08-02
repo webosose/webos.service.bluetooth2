@@ -245,6 +245,11 @@ void BluetoothGattProfileService::characteristicValueChanged(const BluetoothUuid
 	if (localService)
 	{
 		localService->desc.updateCharacteristicValue(characteristic.getUuid(), characteristic.getValue());
+		auto descList = characteristic.getDescriptors();
+		for (auto it = descList.begin(); it != descList.end(); it++)
+		{
+			localService->desc.updateDescriptorValue(characteristic.getUuid(), it->getUuid(), it->getValue());
+		}
 	}
 
 	for (auto it = mMonitorCharacteristicSubscriptions.begin() ; it != mMonitorCharacteristicSubscriptions.end(); ++it)
@@ -296,6 +301,22 @@ void BluetoothGattProfileService::characteristicValueChanged(const BluetoothUuid
 		LSUtils::postToClient(monitorCharacteristicsWatch->getMessage(), responseObj);
 	}
 
+}
+
+void BluetoothGattProfileService::descriptorValueChanged(const BluetoothUuid &service, const BluetoothUuid &characteristic, BluetoothGattDescriptor &descriptor)
+{
+	BT_INFO("BLE", 0, "descriptor value changed for local adapter with service %s, characteristics %s", service.toString().c_str(), characteristic.toString().c_str());
+
+	for (auto obsIter = mGattObservers.begin(); obsIter != mGattObservers.end(); obsIter++)
+	{
+		(*obsIter)->descriptorValueChanged(service, characteristic, descriptor);
+	}
+
+	auto localService = findLocalService(service);
+	if (localService)
+	{
+		localService->desc.updateDescriptorValue(characteristic, descriptor.getUuid(), descriptor.getValue());
+	}
 }
 
 void BluetoothGattProfileService::incomingLeConnectionRequest(const std::string &address, bool state)
@@ -3588,6 +3609,7 @@ void BluetoothGattProfileService::writeLocalDescriptor(
 			{
 				BluetoothGattCharacteristic characteristic = localService->getParentCharacteristic(descriptor.getHandle());
 				localService->desc.updateDescriptorValue(characteristic.getUuid(), descriptor.getUuid(), descriptor.getValue());
+				getImpl<BluetoothGattProfile>()->notifyDescriptorValueChanged(server.second->id, localService->id, descriptor.getHandle(), descriptor, characteristic.getHandle());
 				safe_callback(callback, BLUETOOTH_ERROR_NONE);
 			}
 		}
@@ -3635,6 +3657,12 @@ void BluetoothGattProfileService::writeLocalDescriptor(
 		return;
 	}
 
+	auto localServer = findLocalServerByServiceId(localService->id);
+	if (localServer)
+	{
+		BluetoothGattCharacteristic gattCharacteristic = localService->getParentCharacteristic(descriptor.getHandle());
+		getImpl<BluetoothGattProfile>()->notifyDescriptorValueChanged(localServer->id, localService->id, descriptor.getHandle(), descriptor, gattCharacteristic.getHandle());
+	}
 	localService->desc.updateDescriptorValue(characteristic, descriptor.getUuid(), descriptor.getValue());
 	safe_callback(callback, BLUETOOTH_ERROR_NONE);
 }

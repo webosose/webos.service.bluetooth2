@@ -415,6 +415,7 @@ public:
 	void serviceLost(const std::string &address, const BluetoothGattService &service);
 	void characteristicValueChanged(const std::string &address, const BluetoothUuid &service, const BluetoothGattCharacteristic &characteristic);
 	void characteristicValueChanged(const BluetoothUuid &service, const BluetoothGattCharacteristic &characteristic);
+	void descriptorValueChanged(const BluetoothUuid &service, const BluetoothUuid &characteristic, BluetoothGattDescriptor &descriptor);
 	void incomingLeConnectionRequest(const std::string &address, bool state);
 
 	//Register the Service implementations with GattProfileService
