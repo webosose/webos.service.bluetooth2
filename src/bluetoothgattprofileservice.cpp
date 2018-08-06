@@ -216,8 +216,8 @@ void BluetoothGattProfileService::characteristicValueChanged(const std::string &
 
 		pbnjson::JValue characteristicObj = pbnjson::Object();
 		characteristicObj.put("characteristic", characteristic.getUuid().toString());
-		characteristicObj.put("instanceId", idToString(characteristic.getHandle()));
-
+		if (characteristic.getHandle())
+			characteristicObj.put("instanceId", idToString(characteristic.getHandle()));
 		pbnjson::JValue valueObj = pbnjson::Object();
 		BluetoothGattValue values = characteristic.getValue();
 		pbnjson::JValue bytesArray = pbnjson::Array();
@@ -282,12 +282,11 @@ void BluetoothGattProfileService::characteristicValueChanged(const BluetoothUuid
 		responseObj.put("returnValue", true);
 		responseObj.put("subscribed", true);
 		responseObj.put("adapterAddress", getManager()->getAddress());
-		responseObj.put("address", getManager()->getAddress());
 
 		pbnjson::JValue characteristicObj = pbnjson::Object();
 		characteristicObj.put("characteristic", characteristic.getUuid().toString());
-		characteristicObj.put("instanceId", idToString(characteristic.getHandle()));
-
+		if (characteristic.getHandle())
+			characteristicObj.put("instanceId", idToString(characteristic.getHandle()));
 		pbnjson::JValue valueObj = pbnjson::Object();
 		BluetoothGattValue values = characteristic.getValue();
 		pbnjson::JValue bytesArray = pbnjson::Array();
@@ -922,10 +921,10 @@ pbnjson::JValue BluetoothGattProfileService::buildDescriptor(const BluetoothGatt
 {
 	pbnjson::JValue descriptorObj = pbnjson::Object();
 	descriptorObj.put("descriptor", descriptor.getUuid().toString());
-	descriptorObj.put("instanceId", idToString(descriptor.getHandle()));
 	pbnjson::JValue descValueObj = pbnjson::Object();
 	BluetoothGattValue descValues = descriptor.getValue();
-
+	if (descriptor.getHandle())
+		descriptorObj.put("instanceId", idToString(descriptor.getHandle()));
 	pbnjson::JValue descBytesArray = pbnjson::Array();
 	for (size_t j=0; j < descValues.size(); j++)
 		descBytesArray.append((int32_t) descValues[j]);
@@ -962,9 +961,10 @@ pbnjson::JValue BluetoothGattProfileService::buildDescriptors(const BluetoothGat
 
 		pbnjson::JValue descriptorObj = pbnjson::Object();
 		descriptorObj.put("descriptor", descriptor.getUuid().toString());
-		descriptorObj.put("instanceId", idToString(descriptor.getHandle()));
 		pbnjson::JValue descValueObj = pbnjson::Object();
 		BluetoothGattValue descValues = descriptor.getValue();
+		if (descriptor.getHandle())
+			descriptorObj.put("instanceId", idToString(descriptor.getHandle()));
 
 		pbnjson::JValue descBytesArray = pbnjson::Array();
 		for (size_t j=0; j < descValues.size(); j++)
@@ -998,7 +998,8 @@ pbnjson::JValue BluetoothGattProfileService::buildCharacteristic(bool localAdapt
 {
 	pbnjson::JValue characteristicObj = pbnjson::Object();
 	characteristicObj.put("characteristic", characteristic.getUuid().toString());
-	characteristicObj.put("instanceId", idToString(characteristic.getHandle()));
+	if (characteristic.getHandle())
+		characteristicObj.put("instanceId", idToString(characteristic.getHandle()));
 	pbnjson::JValue valueObj = pbnjson::Object();
 	BluetoothGattValue values = characteristic.getValue();
 
@@ -1048,7 +1049,8 @@ pbnjson::JValue BluetoothGattProfileService::buildCharacteristics(bool localAdap
 	{
 		pbnjson::JValue characteristicObj = pbnjson::Object();
 		characteristicObj.put("characteristic", characteristic.getUuid().toString());
-		characteristicObj.put("instanceId", idToString(characteristic.getHandle()));
+		if (characteristic.getHandle())
+			characteristicObj.put("instanceId", idToString(characteristic.getHandle()));
 		pbnjson::JValue valueObj = pbnjson::Object();
 		BluetoothGattValue values = characteristic.getValue();
 
@@ -1345,9 +1347,9 @@ bool BluetoothGattProfileService::writeCharacteristicValue(LSMessage &message)
 		return true;
 	}
 
-	const std::string schema = STRICT_SCHEMA(PROPS_8(PROP(adapterAddress, string), PROP(serverId, string), PROP(clientId, string),
+	const std::string schema = STRICT_SCHEMA(PROPS_7(PROP(adapterAddress, string), PROP(serverId, string), PROP(clientId, string),
 	                                                 PROP(service, string), PROP(characteristic, string),
-													 PROP(instanceId, string), PROP(writeType, string),
+	                                                 PROP(writeType, string),
 	                                                 OBJECT(value, OBJSCHEMA_3(PROP(string, string),
 	                                                                           PROP(number, integer),
 	                                                                           ARRAY(bytes, integer))))
@@ -1360,6 +1362,9 @@ bool BluetoothGattProfileService::writeCharacteristicValue(LSMessage &message)
 
 		else if (!requestObj.hasKey("value"))
 			LSUtils::respondWithError(request, BT_ERR_GATT_CHARACTERISTC_VALUE_PARAM_MISSING);
+
+		else if (requestObj.hasKey("instanceId"))
+			LSUtils::respondWithError(request, BT_ERR_GATT_INSTANCE_ID_NOT_SUPPORTED);
 
 		else
 			LSUtils::respondWithError(request, BT_ERR_SCHEMA_VALIDATION_FAIL);
@@ -1590,13 +1595,16 @@ bool BluetoothGattProfileService::readCharacteristicValue(LSMessage &message)
 		return true;
 	}
 
-	const std::string schema = STRICT_SCHEMA(PROPS_6(PROP(adapterAddress, string), PROP(serverId, string), PROP(clientId, string),
-	                                                 PROP(service, string), PROP(characteristic, string), PROP(instanceId, string)));
+	const std::string schema = STRICT_SCHEMA(PROPS_5(PROP(adapterAddress, string), PROP(serverId, string), PROP(clientId, string),
+	                                                 PROP(service, string), PROP(characteristic, string)));
 
 	if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError))
 	{
 		if (parseError != JSON_PARSE_SCHEMA_ERROR)
 			LSUtils::respondWithError(request, BT_ERR_BAD_JSON);
+
+		else if (requestObj.hasKey("instanceId"))
+			LSUtils::respondWithError(request, BT_ERR_GATT_INSTANCE_ID_NOT_SUPPORTED);
 
 		else
 			LSUtils::respondWithError(request, BT_ERR_SCHEMA_VALIDATION_FAIL);
@@ -1950,9 +1958,8 @@ bool BluetoothGattProfileService::monitorCharacteristic(LSMessage &message)
 		return true;
 	}
 
-	const std::string schema = STRICT_SCHEMA(PROPS_7(PROP(adapterAddress, string), PROP(serverId, string), PROP(clientId, string),
+	const std::string schema = STRICT_SCHEMA(PROPS_6(PROP(adapterAddress, string), PROP(serverId, string), PROP(clientId, string),
 	                                                 PROP(service, string), PROP(characteristic, string),
-													 PROP(instanceId, integer),
 	                                                 PROP(subscribe, boolean))
 	                                                 REQUIRED_1(subscribe));
 	if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError))
@@ -1962,6 +1969,9 @@ bool BluetoothGattProfileService::monitorCharacteristic(LSMessage &message)
 
 		else if (!requestObj.hasKey("subscribe"))
 			LSUtils::respondWithError(request, BT_ERR_MTHD_NOT_SUBSCRIBED);
+
+		else if (requestObj.hasKey("instanceId"))
+			LSUtils::respondWithError(request, BT_ERR_GATT_INSTANCE_ID_NOT_SUPPORTED);
 
 		else
 			LSUtils::respondWithError(request, BT_ERR_SCHEMA_VALIDATION_FAIL);
@@ -2153,7 +2163,8 @@ bool BluetoothGattProfileService::monitorCharacteristic(LSMessage &message)
 	responseObj.put("returnValue", true);
 	responseObj.put("subscribed", true);
 	responseObj.put("adapterAddress", adapterAddress);
-	responseObj.put("address", deviceAddress);
+	if(deviceAddress != "")
+		responseObj.put("address", deviceAddress);
 	LSUtils::postToClient(monitorCharacteristicsWatch->getMessage(), responseObj);
 
 	return true;
@@ -2483,15 +2494,18 @@ bool BluetoothGattProfileService::readDescriptorValue(LSMessage &message)
 		return true;
 	}
 
-	const std::string schema = STRICT_SCHEMA(PROPS_7(PROP(adapterAddress, string), PROP(serverId, string), PROP(clientId, string),
+	const std::string schema = STRICT_SCHEMA(PROPS_6(PROP(adapterAddress, string), PROP(serverId, string), PROP(clientId, string),
 	                                                 PROP(service, string), PROP(characteristic, string),
-	                                                 PROP(descriptor, string), PROP(instanceId, string))
+	                                                 PROP(descriptor, string))
 	                                                 );
 
 	if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError))
 	{
 		if (parseError != JSON_PARSE_SCHEMA_ERROR)
 			LSUtils::respondWithError(request, BT_ERR_BAD_JSON);
+
+		else if (requestObj.hasKey("instanceId"))
+			LSUtils::respondWithError(request, BT_ERR_GATT_INSTANCE_ID_NOT_SUPPORTED);
 
 		else
 			LSUtils::respondWithError(request, BT_ERR_SCHEMA_VALIDATION_FAIL);
@@ -2762,10 +2776,9 @@ bool BluetoothGattProfileService::writeDescriptorValue(LSMessage &message)
 		return true;
 	}
 
-	const std::string schema = STRICT_SCHEMA(PROPS_9(PROP(adapterAddress, string), PROP(serverId, string), PROP(clientId, string),
+	const std::string schema = STRICT_SCHEMA(PROPS_8(PROP(adapterAddress, string), PROP(serverId, string), PROP(clientId, string),
 	                                                 PROP(service, string), PROP(characteristic, string),
 	                                                 PROP(descriptor, string), PROP(writeType, string),
-                                                     PROP(instanceId, string),
 	                                                 OBJECT(value, OBJSCHEMA_3(PROP(string, string),
 	                                                                           PROP(number, integer),
 	                                                                           ARRAY(bytes, integer))))
@@ -2778,6 +2791,9 @@ bool BluetoothGattProfileService::writeDescriptorValue(LSMessage &message)
 
 		else if (!requestObj.hasKey("value"))
 			LSUtils::respondWithError(request, BT_ERR_GATT_DESCRIPTOR_VALUE_PARAM_MISSING);
+
+		else if (requestObj.hasKey("instanceId"))
+			LSUtils::respondWithError(request, BT_ERR_GATT_INSTANCE_ID_NOT_SUPPORTED);
 
 		else
 			LSUtils::respondWithError(request, BT_ERR_SCHEMA_VALIDATION_FAIL);
@@ -3546,6 +3562,51 @@ void BluetoothGattProfileService::writeLocalCharacteristic(
 		safe_callback(callback, BLUETOOTH_ERROR_NONE);
 		BT_DEBUG("[%s](%d) getImpl->notifyCharacteristicValueChanged\n", __FUNCTION__, __LINE__);
 		getImpl<BluetoothGattProfile>()->notifyCharacteristicValueChanged(localService->id, characteristic, characteristic.getHandle());
+		for (auto it = mMonitorCharacteristicSubscriptions.begin() ; it != mMonitorCharacteristicSubscriptions.end(); ++it)
+		{
+			auto subscriptionValue = it->second;
+
+			bool foundCharacteristic = false;
+			if (subscriptionValue.characteristicUuids.size() > 0)
+			{
+				for (auto it2 = subscriptionValue.characteristicUuids.begin(); it2 != subscriptionValue.characteristicUuids.end(); ++it2)
+				{
+					if ((*it2) == characteristic.getUuid())
+					{
+						foundCharacteristic = true;
+						break;
+					}
+				}
+			}
+			else if (subscriptionValue.characteristicUuid == characteristic.getUuid())
+			{
+				foundCharacteristic = true;
+			}
+
+			if (!foundCharacteristic)
+				continue;
+
+			auto monitorCharacteristicsWatch = it->first;
+			pbnjson::JValue responseObj = pbnjson::Object();
+			responseObj.put("returnValue", true);
+			responseObj.put("subscribed", true);
+			responseObj.put("adapterAddress", getManager()->getAddress());
+
+			pbnjson::JValue characteristicObj = pbnjson::Object();
+			characteristicObj.put("characteristic", characteristic.getUuid().toString());
+
+			pbnjson::JValue valueObj = pbnjson::Object();
+			BluetoothGattValue values = characteristic.getValue();
+			pbnjson::JValue bytesArray = pbnjson::Array();
+			for (size_t i=0; i < values.size(); i++)
+				bytesArray.append((int32_t) values[i]);
+			valueObj.put("bytes", bytesArray);
+
+			characteristicObj.put("value", valueObj);
+			responseObj.put("changed", characteristicObj);
+
+			LSUtils::postToClient(monitorCharacteristicsWatch->getMessage(), responseObj);
+		}
 		return;
 	}
 	BT_ERROR("GATT_FAILED_TO_WRITE_CHAR", 0, "Failed to write local characteristic %s because the service isn't registered",
@@ -3592,6 +3653,52 @@ void BluetoothGattProfileService::writeLocalCharacteristic(
 	auto localServer = findLocalServerByServiceId(localService->id);
 	BT_DEBUG("[%s](%d) getImpl->notifyCharacteristicValueChanged\n", __FUNCTION__, __LINE__);
 	getImpl<BluetoothGattProfile>()->notifyCharacteristicValueChanged(localServer->id, localService->id, characteristic, characteristic.getHandle());
+
+	for (auto it = mMonitorCharacteristicSubscriptions.begin() ; it != mMonitorCharacteristicSubscriptions.end(); ++it)
+	{
+		auto subscriptionValue = it->second;
+
+		bool foundCharacteristic = false;
+		if (subscriptionValue.characteristicUuids.size() > 0)
+		{
+			for (auto it2 = subscriptionValue.characteristicUuids.begin(); it2 != subscriptionValue.characteristicUuids.end(); ++it2)
+			{
+				if ((*it2) == characteristic.getUuid())
+				{
+					foundCharacteristic = true;
+					break;
+				}
+			}
+		}
+		else if (subscriptionValue.characteristicUuid == characteristic.getUuid())
+		{
+			foundCharacteristic = true;
+		}
+
+		if (!foundCharacteristic)
+			continue;
+
+		auto monitorCharacteristicsWatch = it->first;
+		pbnjson::JValue responseObj = pbnjson::Object();
+		responseObj.put("returnValue", true);
+		responseObj.put("subscribed", true);
+		responseObj.put("adapterAddress", getManager()->getAddress());
+
+		pbnjson::JValue characteristicObj = pbnjson::Object();
+		characteristicObj.put("characteristic", characteristic.getUuid().toString());
+
+		pbnjson::JValue valueObj = pbnjson::Object();
+		BluetoothGattValue values = characteristic.getValue();
+		pbnjson::JValue bytesArray = pbnjson::Array();
+		for (size_t i=0; i < values.size(); i++)
+			bytesArray.append((int32_t) values[i]);
+		valueObj.put("bytes", bytesArray);
+
+		characteristicObj.put("value", valueObj);
+		responseObj.put("changed", characteristicObj);
+
+		LSUtils::postToClient(monitorCharacteristicsWatch->getMessage(), responseObj);
+	}
 }
 
 void BluetoothGattProfileService::writeLocalDescriptor(

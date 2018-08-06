@@ -228,6 +228,7 @@ static std::map<BluetoothErrorCode, std::string> bluetoothErrorTextTable =
 	{BT_ERR_GATT_REMOVE_SERVER_FAIL, "GATT remove server failed"},
 	{BT_ERR_GATT_ADVERTISERID_PARAM_MISSING, "Required 'advertiserId' parameter is not supplied"},
 	{BT_ERR_GATT_READ_DESCRIPTOR_FAIL, "Failed to read descriptor"},
+	{BT_ERR_GATT_INSTANCE_ID_NOT_SUPPORTED, "'instanceId' is not supported"},
 	{BT_ERR_CLIENTID_PARAM_MISSING, "Required 'clientId' parameter is not supplied"},
 };
 

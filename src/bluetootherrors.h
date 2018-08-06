@@ -206,6 +206,7 @@ enum BluetoothErrorCode
 	BT_ERR_GATT_READ_DESCRIPTOR_FAIL = 282,
 	BT_ERR_CLIENTID_PARAM_MISSING = 283,
 	BT_ERR_BLE_ADV_EXCEED_SIZE_LIMIT = 284,
+	BT_ERR_GATT_INSTANCE_ID_NOT_SUPPORTED = 285,
 };
 
 void appendErrorResponse(pbnjson::JValue &obj, BluetoothError errorCode);
