@@ -216,8 +216,6 @@ void BluetoothGattProfileService::characteristicValueChanged(const std::string &
 
 		pbnjson::JValue characteristicObj = pbnjson::Object();
 		characteristicObj.put("characteristic", characteristic.getUuid().toString());
-		if (characteristic.getHandle())
-			characteristicObj.put("instanceId", idToString(characteristic.getHandle()));
 		pbnjson::JValue valueObj = pbnjson::Object();
 		BluetoothGattValue values = characteristic.getValue();
 		pbnjson::JValue bytesArray = pbnjson::Array();
@@ -285,8 +283,6 @@ void BluetoothGattProfileService::characteristicValueChanged(const BluetoothUuid
 
 		pbnjson::JValue characteristicObj = pbnjson::Object();
 		characteristicObj.put("characteristic", characteristic.getUuid().toString());
-		if (characteristic.getHandle())
-			characteristicObj.put("instanceId", idToString(characteristic.getHandle()));
 		pbnjson::JValue valueObj = pbnjson::Object();
 		BluetoothGattValue values = characteristic.getValue();
 		pbnjson::JValue bytesArray = pbnjson::Array();
@@ -923,8 +919,6 @@ pbnjson::JValue BluetoothGattProfileService::buildDescriptor(const BluetoothGatt
 	descriptorObj.put("descriptor", descriptor.getUuid().toString());
 	pbnjson::JValue descValueObj = pbnjson::Object();
 	BluetoothGattValue descValues = descriptor.getValue();
-	if (descriptor.getHandle())
-		descriptorObj.put("instanceId", idToString(descriptor.getHandle()));
 	pbnjson::JValue descBytesArray = pbnjson::Array();
 	for (size_t j=0; j < descValues.size(); j++)
 		descBytesArray.append((int32_t) descValues[j]);
@@ -963,8 +957,6 @@ pbnjson::JValue BluetoothGattProfileService::buildDescriptors(const BluetoothGat
 		descriptorObj.put("descriptor", descriptor.getUuid().toString());
 		pbnjson::JValue descValueObj = pbnjson::Object();
 		BluetoothGattValue descValues = descriptor.getValue();
-		if (descriptor.getHandle())
-			descriptorObj.put("instanceId", idToString(descriptor.getHandle()));
 
 		pbnjson::JValue descBytesArray = pbnjson::Array();
 		for (size_t j=0; j < descValues.size(); j++)
@@ -998,8 +990,6 @@ pbnjson::JValue BluetoothGattProfileService::buildCharacteristic(bool localAdapt
 {
 	pbnjson::JValue characteristicObj = pbnjson::Object();
 	characteristicObj.put("characteristic", characteristic.getUuid().toString());
-	if (characteristic.getHandle())
-		characteristicObj.put("instanceId", idToString(characteristic.getHandle()));
 	pbnjson::JValue valueObj = pbnjson::Object();
 	BluetoothGattValue values = characteristic.getValue();
 
@@ -1049,8 +1039,6 @@ pbnjson::JValue BluetoothGattProfileService::buildCharacteristics(bool localAdap
 	{
 		pbnjson::JValue characteristicObj = pbnjson::Object();
 		characteristicObj.put("characteristic", characteristic.getUuid().toString());
-		if (characteristic.getHandle())
-			characteristicObj.put("instanceId", idToString(characteristic.getHandle()));
 		pbnjson::JValue valueObj = pbnjson::Object();
 		BluetoothGattValue values = characteristic.getValue();
 
@@ -3854,7 +3842,6 @@ void BluetoothGattProfileService::characteristicValueWriteRequested(uint32_t req
 
 		pbnjson::JValue characteristicObj = pbnjson::Object();
 		characteristicObj.put("characteristic", characteristic.getUuid().toString());
-		characteristicObj.put("instanceId", idToString(charId));
 		pbnjson::JValue valueObj = pbnjson::Object();
 		BluetoothGattValue values = value;
 		pbnjson::JValue bytesArray = pbnjson::Array();
