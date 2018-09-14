@@ -12,7 +12,9 @@ aspects within the webOS platform.
 
 Currently it supports the following profiles:
 
-* none
+* GAP
+* GATT
+* SPP
 
 How to Build on Linux
 =====================
