@@ -2062,12 +2062,6 @@ bool BluetoothManagerService::getDeviceStatus(LSMessage &message)
         int parseError = 0;
 	bool subscribed = false;
 
-	if (!mDefaultAdapter)
-	{
-		LSUtils::respondWithError(request, BT_ERR_ADAPTER_NOT_AVAILABLE);
-		return true;
-	}
-
 	const std::string schema =  STRICT_SCHEMA(PROPS_3(PROP(subscribe, boolean), PROP(adapterAddress, string), PROP(classOfDevice, integer)));
 
 	if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError))
@@ -2080,17 +2074,23 @@ bool BluetoothManagerService::getDeviceStatus(LSMessage &message)
 		return true;
 	}
 
-	std::string adapterAddress;
-	if (!isRequestedAdapterAvailable(request, requestObj, adapterAddress))
-		return true;
-
-	pbnjson::JValue responseObj = pbnjson::Object();
-
 	if (request.isSubscription())
 	{
 		mGetDevicesSubscriptions.subscribe(request);
 		subscribed = true;
 	}
+
+	if (!mDefaultAdapter)
+	{
+		LSUtils::respondWithError(request, BT_ERR_ADAPTER_NOT_AVAILABLE);
+		return true;
+	}
+
+	std::string adapterAddress;
+	if (!isRequestedAdapterAvailable(request, requestObj, adapterAddress))
+		return true;
+
+	pbnjson::JValue responseObj = pbnjson::Object();
 
 	appendDevices(responseObj);
 
