@@ -83,3 +83,6 @@ target_link_libraries(webos-bluetooth-service
 webos_build_daemon()
 webos_build_system_bus_files()
 webos_build_configured_file(files/conf/pmlog/webos-bluetooth-service.conf SYSCONFDIR pmlog.d)
+install(DIRECTORY @CMAKE_SOURCE_DIR@/files/rules/ DESTINATION @WEBOS_INSTALL_SYSCONFDIR@/udev/rules.d/ FILES_MATCHING PATTERN "*.rules*" PATTERN ".*" EXCLUDE)
+install(FILES @CMAKE_SOURCE_DIR@/files/scripts/bluetooth_usb_inserted.sh DESTINATION @WEBOS_INSTALL_SYSCONFDIR@/udev/scripts/ PERMISSIONS GROUP_READ GROUP_WRITE GROUP_EXECUTE)
+install(FILES @CMAKE_SOURCE_DIR@/files/scripts/bluetooth_usb_removed.sh DESTINATION @WEBOS_INSTALL_SYSCONFDIR@/udev/scripts/ PERMISSIONS GROUP_READ GROUP_WRITE GROUP_EXECUTE)
