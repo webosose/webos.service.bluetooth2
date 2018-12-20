@@ -14,5 +14,5 @@
 #
 # LICENSE@@@
 
-ACTION=="add", SUBSYSTEM=="bluetooth",DEVPATH=="*/usb*", RUN+="/etc/udev/scripts/bluetooth_usb_inserted.sh"
-ACTION=="remove", SUBSYSTEM=="bluetooth", DEVPATH=="*/usb*", RUN+="/etc/udev/scripts/bluetooth_usb_removed.sh"
+ACTION=="add", SUBSYSTEM=="bluetooth",DEVPATH=="*/usb*", ENV{DEVTYPE}=="host", RUN+="/etc/udev/scripts/bluetooth_usb_inserted.sh"
+ACTION=="remove", SUBSYSTEM=="bluetooth", DEVPATH=="*/usb*", ENV{DEVTYPE}=="host", RUN+="/etc/udev/scripts/bluetooth_usb_removed.sh"
