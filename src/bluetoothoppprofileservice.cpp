@@ -569,7 +569,10 @@ void BluetoothOppProfileService::deletePushRequest(const std::string &requestId)
 		PushRequest *pushRequest = propIter->second;
 		if (pushRequest->requestId == requestId)
 		{
-			mDeletedPushRequested.insert(std::pair<std::string, PushRequest*>(pushRequest->requestId, pushRequest));
+			/* No need to insert in mDeletedPushREquest
+			Always generate new request every time
+			*/
+			//mDeletedPushRequested.insert(std::pair<std::string, PushRequest*>(pushRequest->requestId, pushRequest));
 			mPushRequests.erase(propIter);
 			break;
 		}
@@ -811,6 +814,7 @@ void BluetoothOppProfileService::transferStateChanged(BluetoothOppTransferId tra
 		if (pushRequest->transferred == pushRequest->fileSize)
 		{
 			deleteTransferId(requestListIndex);
+			deletePushRequest(pushRequest->requestId);
 		}
 	}
 }
