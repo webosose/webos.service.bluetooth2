@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018 LG Electronics, Inc.
+// Copyright (c) 2014-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -535,7 +535,7 @@ BluetoothDevice* BluetoothManagerService::findDevice(const std::string &address)
 	if (deviceIter == mDevices.end())
 	{
 		convertedAddress = convertToUpper(address);
-		auto deviceIter = mDevices.find(convertedAddress);
+		deviceIter = mDevices.find(convertedAddress);
 		if (deviceIter == mDevices.end())
 			return 0;
 	}
@@ -550,7 +550,7 @@ BluetoothDevice* BluetoothManagerService::findLeDevice(const std::string &addres
 	if (deviceIter == mLeDevices.end())
 	{
 		convertedAddress = convertToUpper(address);
-		auto deviceIter = mLeDevices.find(convertedAddress);
+		deviceIter = mLeDevices.find(convertedAddress);
 		if (deviceIter == mLeDevices.end())
 			return 0;
 	}
@@ -565,7 +565,7 @@ BluetoothLinkKey BluetoothManagerService::findLinkKey(const std::string &address
 	if (linkKeyIter == mLinkKeys.end())
 	{
 		convertedAddress = convertToUpper(address);
-		auto linkKeyIter = mLinkKeys.find(convertedAddress);
+		linkKeyIter = mLinkKeys.find(convertedAddress);
 		if (linkKeyIter == mLinkKeys.end())
 			return std::vector<int32_t>();
 	}

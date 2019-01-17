@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2018 LG Electronics, Inc.
+// Copyright (c) 2015-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -514,9 +514,11 @@ void ChannelManager::deleteCreateChannelSubscription(const std::string &uuid)
 	if (findIter == mCreateChannelSubscriptons.end())
 		return;
 
+	CreateChannelInfo *channelInfo = findIter->second;
 	mCreateChannelSubscriptons.erase(findIter);
-	if (findIter->second)
-		delete findIter->second;
+
+	if (channelInfo)
+		delete channelInfo;
 }
 
 const ChannelManager::DataBuffer *ChannelManager::getChannelBufferData(std::string &channelId, const std::string &appName)
