@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018 LG Electronics, Inc.
+// Copyright (c) 2014-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@
 
 
 PmLogContext logContext;
-
 static const char* const logContextName = "webos-bluetooth-service";
 
 static gboolean option_version = FALSE;
@@ -34,11 +33,34 @@ static GOptionEntry options[] = {
 	{ NULL },
 };
 
+static GMainLoop *mainLoop = nullptr;
+
+void term_handler(int signal)
+{
+	const char *str = nullptr;
+	switch (signal) {
+		case SIGTERM:
+			str = "SIGTERM";
+			break;
+		case SIGABRT:
+			str = "SIGABRT";
+			break;
+		case SIGINT:
+			str = "SIGINT";
+			break;
+		default:
+			str = "Unknown";
+			break;
+	}
+
+	BT_DEBUG("signal received.. signal[%s]", str);
+	g_main_loop_quit(mainLoop);
+}
+
 int main(int argc, char **argv)
 {
 	try
 	{
-		GMainLoop *mainLoop;
 		GOptionContext *context;
 		GError *err = NULL;
 
@@ -70,6 +92,8 @@ int main(int argc, char **argv)
 			abort();
 		}
 
+		signal(SIGTERM, term_handler);
+		signal(SIGINT, term_handler);
 		mainLoop = g_main_loop_new(NULL, FALSE);
 
 		BT_DEBUG("Starting bluetooth manager service");

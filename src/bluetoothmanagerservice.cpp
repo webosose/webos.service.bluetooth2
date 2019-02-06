@@ -74,7 +74,8 @@ BluetoothManagerService::BluetoothManagerService() :
 	mDefaultAdapter(0),
 	mOutgoingPairingWatch(0),
 	mIncomingPairingWatch(0),
-	mAdvertisingWatch(0)
+	mAdvertisingWatch(0),
+	mGattAnsc(0)
 {
 	std::string bluetoothCapability = WEBOS_BLUETOOTH_PAIRING_IO_CAPABILITY;
 	const char* capabilityOverride = getenv("WEBOS_BLUETOOTH_PAIRING_IO_CAPABILITY");
@@ -177,6 +178,15 @@ BluetoothManagerService::BluetoothManagerService() :
 BluetoothManagerService::~BluetoothManagerService()
 {
 	BT_DEBUG("Shutting down bluetooth manager service ...");
+
+	for (auto profile : mProfiles)
+	{
+		if (profile)
+			delete profile;
+	}
+
+	if (mGattAnsc)
+		delete mGattAnsc;
 
 	if (mSil)
 		delete mSil;
@@ -362,7 +372,7 @@ void BluetoothManagerService::createProfiles()
 		BluetoothGattProfileService *gattService = new BluetoothGattProfileService(this);
 
 		if (isServiceClassEnabled("ANCS")) {
-			new BluetoothGattAncsProfile(this, gattService);
+			mGattAnsc = new BluetoothGattAncsProfile(this, gattService);
 			//BluetoothGattAncsProfile registers with gattService
 		}
 		mProfiles.push_back(gattService);

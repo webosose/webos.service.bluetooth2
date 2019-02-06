@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018 LG Electronics, Inc.
+// Copyright (c) 2014-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,15 +54,15 @@ BluetoothSIL *BluetoothSILFactory::create(unsigned int version, BluetoothPairing
 
 	BT_INFO("SILFACTORY", 0, "Trying to use SIL file name as %s\n", name.c_str());
 
-	std::string path = g_build_path("/", basePath.c_str(), name.c_str(), NULL);
+	char* path = g_build_path("/", basePath.c_str(), name.c_str(), NULL);
 
-	BT_INFO("SILFACTORY", 0, "Trying to load SIL from path %s\n", path.c_str());
+	BT_INFO("SILFACTORY", 0, "Trying to load SIL from path %s\n", path);
 
-	SILHandle = dlopen(path.c_str(), RTLD_NOW);
+	SILHandle = dlopen(path, RTLD_NOW);
 
 	if (!SILHandle)
 	{
-		BT_CRITICAL(MSGID_SIL_DOESNT_EXIST, 0, "Failed to load SIL from path %s, err = %s", path.c_str(), dlerror());
+		BT_CRITICAL(MSGID_SIL_DOESNT_EXIST, 0, "Failed to load SIL from path %s, err = %s", path, dlerror());
 		return 0;
 	}
 
@@ -86,8 +86,9 @@ BluetoothSIL *BluetoothSILFactory::create(unsigned int version, BluetoothPairing
 		return 0;
 	}
 
-	BT_DEBUG("Successfully created SIL from %s", path.c_str());
+	BT_DEBUG("Successfully created SIL from %s", path);
 
+	g_free(path);
 	return sil;
 }
 
