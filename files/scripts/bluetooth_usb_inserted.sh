@@ -1,6 +1,6 @@
 #!/bin/sh
 
-systemctl stop brcm43438
+systemctl stop hciuart
 
 rmmod hci_uart
 
