@@ -443,7 +443,7 @@ void BluetoothManagerService::notifySubscriberLeDevicesChanged()
 	}
 }
 
-void BluetoothManagerService::notifySubscriberLeDevicesChangedbyScanId(uint32_t scanId)
+void BluetoothManagerService::notifySubscriberLeDevicesChangedbyScanId(uint32_t scanId, BluetoothDevice *device)
 {
 	auto watchIter = mStartScanWatches.find(scanId);
 	if (watchIter == mStartScanWatches.end())
@@ -453,6 +453,8 @@ void BluetoothManagerService::notifySubscriberLeDevicesChangedbyScanId(uint32_t 
 	pbnjson::JValue responseObj = pbnjson::Object();
 
 	appendLeDevicesByScanId(responseObj, scanId);
+
+	appendLeRecentDevice(responseObj, device);
 
 	responseObj.put("returnValue", true);
 
@@ -917,7 +919,7 @@ void BluetoothManagerService::leDeviceFoundByScanId(uint32_t scanId, BluetoothPr
 	else
 		(devicesIter->second).insert(std::pair<std::string, BluetoothDevice*>(device->getAddress(), device));
 
-	notifySubscriberLeDevicesChangedbyScanId(scanId);
+	notifySubscriberLeDevicesChangedbyScanId(scanId, device);
 }
 
 void BluetoothManagerService::leDevicePropertiesChangedByScanId(uint32_t scanId, const std::string &address, BluetoothPropertiesList properties)
@@ -935,7 +937,7 @@ void BluetoothManagerService::leDevicePropertiesChangedByScanId(uint32_t scanId,
 	BluetoothDevice *device = deviceIter->second;
 	if (device && device->update(properties))
 	{
-		notifySubscriberLeDevicesChangedbyScanId(scanId);
+		notifySubscriberLeDevicesChangedbyScanId(scanId, device);
 	}
 }
 
@@ -954,7 +956,6 @@ void BluetoothManagerService::leDeviceRemovedByScanId(uint32_t scanId, const std
 	BluetoothDevice *device = deviceIter->second;
 	(devicesIter->second).erase(deviceIter);
 	delete device;
-
 	notifySubscriberLeDevicesChangedbyScanId(scanId);
 }
 
@@ -1313,6 +1314,40 @@ void BluetoothManagerService::appendLeDevices(pbnjson::JValue &object)
 	}
 
 	object.put("devices", devicesObj);
+}
+
+void BluetoothManagerService::appendLeRecentDevice(pbnjson::JValue &object, BluetoothDevice *device)
+{
+
+	if(NULL == device)
+	{
+		BT_ERROR("MANAGER_SERVICE", 0, "appendLeDevicesByScanId  device field NULL\n");
+		return;
+	}
+
+	pbnjson::JValue deviceObj = pbnjson::Object();
+
+	deviceObj.put("name", device->getName());
+	deviceObj.put("address", device->getAddress());
+	deviceObj.put("typeOfDevice", device->getTypeAsString());
+	deviceObj.put("classOfDevice", (int32_t) device->getClassOfDevice());
+	deviceObj.put("paired", device->getPaired());
+	deviceObj.put("pairing", device->getPairing());
+	deviceObj.put("trusted", device->getTrusted());
+	deviceObj.put("blocked", device->getBlocked());
+	deviceObj.put("rssi", device->getRssi());
+
+	if(device->getPaired())
+		deviceObj.put("adapterAddress", mAddress);
+	else
+		deviceObj.put("adapterAddress", "");
+
+	appendManufacturerData(deviceObj, device->getManufacturerData());
+	appendScanRecord(deviceObj, device->getScanRecord());
+	appendSupportedServiceClasses(deviceObj, device->getSupportedServiceClasses());
+	appendConnectedProfiles(deviceObj, device->getAddress());
+
+	object.put("device", deviceObj);
 }
 
 void BluetoothManagerService::appendLeDevicesByScanId(pbnjson::JValue &object, uint32_t scanId)

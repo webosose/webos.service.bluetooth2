@@ -160,6 +160,7 @@ private:
 	void appendFilteringDevices(std::string senderName, pbnjson::JValue &object);
 	void appendDevices(pbnjson::JValue &object);
 	void appendLeDevices(pbnjson::JValue &object);
+	void appendLeRecentDevice(pbnjson::JValue &object, BluetoothDevice *device);
 	void appendLeDevicesByScanId(pbnjson::JValue &object, uint32_t scanId);
 	void appendSupportedServiceClasses(pbnjson::JValue &object, const std::vector<BluetoothServiceClassInfo> &supportedProfiles);
 	void appendConnectedProfiles(pbnjson::JValue &object, const std::string deviceAddress);
@@ -168,7 +169,7 @@ private:
 	void appendScanRecord(pbnjson::JValue &object, const std::vector<uint8_t> scanRecord);
 
 	void notifySubscriberLeDevicesChanged();
-	void notifySubscriberLeDevicesChangedbyScanId(uint32_t scanId);
+	void notifySubscriberLeDevicesChangedbyScanId(uint32_t scanId, BluetoothDevice *device = NULL);
 	void notifySubscribersAboutStateChange();
 	void notifySubscribersFilteredDevicesChanged();
 	void notifySubscribersDevicesChanged();
